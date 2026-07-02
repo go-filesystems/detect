@@ -72,8 +72,8 @@ jobs:
           set -euo pipefail
           pct=$(go tool cover -func=cover.out | awk '/^total:/ {sub(/%/,"",$3); print $3}')
           echo "total coverage: ${pct}%"
-          awk -v p="$pct" 'BEGIN { exit (p+0 >= 90.0) ? 0 : 1 }' \
-            || { echo "coverage ${pct}% below gate 90.0%"; exit 1; }
+          awk -v p="$pct" 'BEGIN { exit (p+0 >= 100.0) ? 0 : 1 }' \
+            || { echo "coverage ${pct}% below gate 100.0%"; exit 1; }
 
       - name: Upload coverage report
         if: always()
@@ -231,8 +231,8 @@ jobs:
           set -euo pipefail
           pct=$(go tool cover -func=cover.out | awk '/^total:/ {sub(/%/,"",$3); print $3}')
           echo "total coverage: ${pct}%"
-          awk -v p="$pct" 'BEGIN { exit (p+0 >= 90.0) ? 0 : 1 }' \
-            || { echo "coverage ${pct}% below gate 90.0%"; exit 1; }
+          awk -v p="$pct" 'BEGIN { exit (p+0 >= 100.0) ? 0 : 1 }' \
+            || { echo "coverage ${pct}% below gate 100.0%"; exit 1; }
 
   adapter-emulated:
     name: adapter emulated ${{ matrix.arch }}
