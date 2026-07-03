@@ -1,3 +1,5 @@
+<p align="center"><img src="https://raw.githubusercontent.com/go-filesystems/brand/main/social/go-filesystems.png" alt="go-filesystems/detect" width="720"></p>
+
 # detect
 
 [![Go Reference](https://pkg.go.dev/badge/github.com/go-filesystems/detect.svg)](https://pkg.go.dev/github.com/go-filesystems/detect)
