@@ -71,9 +71,30 @@ was detected but no `Opener` is registered for it.
 
 ### Registering a driver directly
 
+Every `go-filesystems` driver's `Open` is path-based (it needs random-access
+read/write on a real file), so an `Opener` — which only gets an `io.ReaderAt`
++ size — stages the image into a temporary file before delegating, the same
+way `fat32reg` does:
+
 ```go
 detect.Register(detect.XFS, func(r io.ReaderAt, size int64) (filesystem.Filesystem, error) {
-    return xfs.Open(r, size)
+    tmp, err := os.CreateTemp("", "xfsreg-*.img")
+    if err != nil {
+        return nil, err
+    }
+    path := tmp.Name()
+    if _, err := io.Copy(tmp, io.NewSectionReader(r, 0, size)); err != nil {
+        tmp.Close()
+        os.Remove(path)
+        return nil, err
+    }
+    tmp.Close()
+    fs, err := xfs.Open(path, -1)
+    if err != nil {
+        os.Remove(path)
+        return nil, err
+    }
+    return fs, nil // wrap to also os.Remove(path) on Close, as fat32reg.tempFS does
 })
 ```
 
