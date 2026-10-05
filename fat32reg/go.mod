@@ -1,11 +1,11 @@
 module github.com/go-filesystems/detect/fat32reg
 
-go 1.26.4
+go 1.27.1
 
 require (
-	github.com/go-filesystems/detect v0.1.0
-	github.com/go-filesystems/fat32 v0.4.0
-	github.com/go-filesystems/interface v0.3.0
+	github.com/go-filesystems/detect v0.3.0
+	github.com/go-filesystems/fat32 v0.5.0
+	github.com/go-filesystems/interface v0.4.0
 )
 
 require (
