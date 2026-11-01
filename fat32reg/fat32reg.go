@@ -30,6 +30,10 @@ import (
 )
 
 func init() {
+	// One driver reads all three FAT variants; detect tells them apart.
+	// FAT12 and FAT16 are read-only (fat32 v0.6.0).
+	detect.Register(detect.FAT12, Open)
+	detect.Register(detect.FAT16, Open)
 	detect.Register(detect.FAT32, Open)
 }
 

@@ -108,7 +108,7 @@ consumer can wire a driver in with a single blank import:
 
 | Adapter | Driver | Type |
 |---|---|---|
-| `detect/fat32reg` | [`go-filesystems/fat32`](https://github.com/go-filesystems/fat32) | `fat32` |
+| `detect/fat32reg` | [`go-filesystems/fat32`](https://github.com/go-filesystems/fat32) | `fat12`, `fat16` (read-only), `fat32` |
 
 Each adapter is its own module: it carries the `replace
 github.com/go-filesystems/interface => ../../interface` sibling directive that

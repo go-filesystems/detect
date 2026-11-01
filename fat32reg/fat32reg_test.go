@@ -2,6 +2,8 @@ package fat32reg
 
 import (
 	"bytes"
+	"compress/gzip"
+	"embed"
 	"errors"
 	"io"
 	"os"
@@ -200,3 +202,51 @@ func (noopFS) MkDir(string, os.FileMode) error               { return nil }
 func (noopFS) DeleteFile(string) error                       { return nil }
 func (noopFS) DeleteDir(string) error                        { return nil }
 func (noopFS) Rename(string, string) error                   { return nil }
+
+//go:embed testdata/fat12.img.gz testdata/fat16.img.gz
+var smallFAT embed.FS
+
+// TestSmallFATThroughDetect is the weft-firstboot path for a small seed volume:
+// images formatted by newfs_msdos -F 12 / -F 16 (and populated by mtools) open
+// through detect + fat32 exactly as a FAT32 one does, and read back.
+func TestSmallFATThroughDetect(t *testing.T) {
+	for name, want := range map[string]detect.Type{"fat12.img.gz": detect.FAT12, "fat16.img.gz": detect.FAT16} {
+		f, err := smallFAT.Open("testdata/" + name)
+		if err != nil {
+			t.Fatal(err)
+		}
+		zr, err := gzip.NewReader(f)
+		if err != nil {
+			t.Fatal(err)
+		}
+		image, err := io.ReadAll(zr)
+		f.Close()
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !detect.Registered(want) {
+			t.Fatalf("%s: no opener registered", want)
+		}
+		path := filepath.Join(t.TempDir(), "seed.img")
+		if err := os.WriteFile(path, image, 0o644); err != nil {
+			t.Fatal(err)
+		}
+		fs, typ, err := detect.OpenFile(path)
+		if err != nil || typ != want {
+			t.Fatalf("%s: OpenFile = %q, %v; want %q", name, typ, err, want)
+		}
+		ents, err := fs.ListDir("/")
+		if err != nil || len(ents) == 0 {
+			t.Fatalf("%s: ListDir = %d entries, %v", name, len(ents), err)
+		}
+		if data, err := fs.ReadFile("/A long file name.txt"); err != nil || len(data) != 3000 {
+			t.Fatalf("%s: ReadFile = %d bytes, %v", name, len(data), err)
+		}
+		if err := fs.WriteFile("/x", []byte("x"), 0o644); err == nil {
+			t.Fatalf("%s: a write to a FAT12/16 volume succeeded", name)
+		}
+		if err := fs.Close(); err != nil {
+			t.Fatal(err)
+		}
+	}
+}
