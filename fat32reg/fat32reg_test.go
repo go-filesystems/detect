@@ -169,9 +169,10 @@ func TestOpenCopyError(t *testing.T) {
 func TestOpenFlushError(t *testing.T) {
 	// Make the temp file's Close fail by closing it inside ioCopy.
 	defer swap(&ioCopy, func(w io.Writer, _ io.Reader) (int64, error) {
-		w.(*os.File).Close() // pre-close so the real Close in Open errors
+		w.(*sparseWriter).f.Close() // pre-close so the real Close in Open errors
 		return 0, nil
 	})()
+	defer swap(&truncate, func(*os.File, int64) error { return nil })()
 	defer swap(&osRemove, func(p string) error { return os.Remove(p) })()
 	if _, err := Open(bytes.NewReader(make([]byte, 16)), 16); err == nil {
 		t.Fatal("expected flush (Close) error")
