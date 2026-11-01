@@ -19,6 +19,7 @@
 package fat32reg
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"os"
@@ -44,7 +45,55 @@ var (
 	createTemp = os.CreateTemp
 	ioCopy     = io.Copy
 	osRemove   = os.Remove
+	truncate   = func(f *os.File, size int64) error { return f.Truncate(size) }
 )
+
+// holeBlock is the granularity at which an all-zero run is left as a hole in
+// the staged file: one filesystem block.
+const holeBlock = 4096
+
+var zeroBlock [holeBlock]byte
+
+// sparseWriter stages an image without turning its holes into data. A disk image
+// is usually sparse (a raw qemu image, a truncated file): 256 MiB of zeros
+// written byte for byte took 256 MiB of disk (8 GiB at maxImage). An all-zero
+// block is skipped with a seek instead, and Open sets the final length with a
+// truncate, so the staged copy occupies about what the source does.
+type sparseWriter struct{ f *os.File }
+
+func (s *sparseWriter) Write(p []byte) (int, error) {
+	// Runs of data blocks go out in ONE write (a write per 4 KiB block made a
+	// dense image 4.5x slower to stage); only a zero block is seeked over.
+	n, start := 0, 0
+	flush := func(end int) error {
+		if end > start {
+			k, err := s.f.Write(p[start:end])
+			n += k
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+	for off := 0; off < len(p); off += holeBlock {
+		end := min(off+holeBlock, len(p))
+		if !bytes.Equal(p[off:end], zeroBlock[:end-off]) {
+			continue
+		}
+		if err := flush(off); err != nil {
+			return n, err
+		}
+		if _, err := s.f.Seek(int64(end-off), io.SeekCurrent); err != nil {
+			return n, err
+		}
+		n += end - off
+		start = end
+	}
+	if err := flush(len(p)); err != nil {
+		return n, err
+	}
+	return n, nil
+}
 
 // Open implements detect.Opener for FAT32. It copies the whole image from r
 // into a temporary file (the fat32 driver opens by path, read/write) and
@@ -59,10 +108,16 @@ func Open(r io.ReaderAt, size int64) (filesystem.Filesystem, error) {
 	}
 	path := tmp.Name()
 
-	if _, err := ioCopy(tmp, io.NewSectionReader(r, 0, size)); err != nil {
+	if _, err := ioCopy(&sparseWriter{f: tmp}, io.NewSectionReader(r, 0, size)); err != nil {
 		tmp.Close()
 		osRemove(path)
 		return nil, fmt.Errorf("fat32reg: stage image: %w", err)
+	}
+	// Trailing holes were seeked over, not written: set the length.
+	if err := truncate(tmp, size); err != nil {
+		tmp.Close()
+		osRemove(path)
+		return nil, fmt.Errorf("fat32reg: size image: %w", err)
 	}
 	if err := tmp.Close(); err != nil {
 		osRemove(path)

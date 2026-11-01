@@ -158,6 +158,15 @@ detected.
   [`go-volumes/safeio`](https://github.com/go-volumes/safeio) with a 1 MiB
   per-read ceiling, so a truncated or hostile image never triggers a large
   allocation, and probing past the end of a small image is not fatal.
+- **Untrusted input.** An image never sizes an allocation here: every probe is
+  a fixed window of at most 8 bytes at a fixed offset (a test pins the whole
+  detection to under 256 reads and 2 KiB, for any declared size), and the
+  per-read ceiling above is the backstop. `FuzzDetect` feeds arbitrary bytes
+  through `Detect` and `Open`. The `fat32reg` adapter stages the image in a
+  temporary file because the fat32 driver opens by path; it now leaves
+  all-zero blocks as holes, so a sparse image (a raw VM disk, a truncated file)
+  occupies about what it holds, not its declared size (a declared 256 MiB of
+  zeros used to take 256 MiB of disk, and `maxImage` is 8 GiB).
 - **No false positives.** Container/whole-disk magics are checked before the
   FAT-family boot-sector heuristics, and FAT32 / NTFS require multiple
   corroborating fields.
