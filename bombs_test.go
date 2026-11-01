@@ -32,7 +32,9 @@ func TestDetectReadsAreFixedAndSmall(t *testing.T) {
 		// A probe reads at most 8 bytes; the whole detection a few KiB (the ZFS
 		// ring scan is 128 reads of 8 bytes).
 		for _, rd := range r.reads {
-			if rd.n <= 0 || rd.n > 8 || rd.off < 0 || rd.off > 1<<20 {
+			// 64 bytes is the FAT12/16 boot-sector probe (fatBPBLen); every
+			// other probe reads at most 8.
+			if rd.n <= 0 || rd.n > fatBPBLen || rd.off < 0 || rd.off > 1<<20 {
 				t.Fatalf("size %d: read of %d bytes at %d is not a fixed small window", size, rd.n, rd.off)
 			}
 		}
@@ -49,10 +51,13 @@ func FuzzDetect(f *testing.F) {
 	f.Add([]byte{})
 	f.Add(bytes.Repeat([]byte{0xff}, 4096))
 	f.Add(append([]byte("XFSB"), make([]byte, 600)...))
+	f.Add(fatBoot(4000, 1, 16, 16, 1, 1))
+	f.Add(fatBoot(1+256+1+5000, 1, 256, 16, 1, 1))
+	f.Add(fatBoot(0xFFFFFFFF, 255, 0xFFFF, 0xFFFF, 0xFFFF, 255))
 	f.Add(append(make([]byte, 0x438), 0x53, 0xEF))
 	f.Add(append(make([]byte, 0x8001), []byte("CD001")...))
 	f.Fuzz(func(t *testing.T, img []byte) {
-		known := map[Type]bool{FAT32: true, ExFAT: true, NTFS: true, Ext4: true, XFS: true, Btrfs: true,
+		known := map[Type]bool{FAT12: true, FAT16: true, FAT32: true, ExFAT: true, NTFS: true, Ext4: true, XFS: true, Btrfs: true,
 			ZFS: true, APFS: true, HFSPlus: true, ISO9660: true, SquashFS: true, UFS: true}
 		for _, size := range []int64{int64(len(img)), -1, int64(len(img)) + 1<<20} {
 			typ, err := Detect(bytes.NewReader(img), size)
