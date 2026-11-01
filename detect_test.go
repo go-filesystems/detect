@@ -72,6 +72,10 @@ func fixtures() map[Type][]byte {
 			3:   []byte(ntfsID),
 			510: u16le(bootSig),
 		}),
+		// The fixed regions the BPB describes (reserved, FAT, root) must fit
+		// in the image, so these are padded to the start of the data area.
+		FAT12: append(fatBoot(4000, 1, 16, 16, 1, 1), make([]byte, 17*512)...),
+		FAT16: append(fatBoot(1+256+1+5000, 1, 256, 16, 1, 1), make([]byte, 257*512)...),
 		FAT32: img(512, map[int][]byte{
 			0x52: []byte(fat32Label),
 			510:  u16le(bootSig),

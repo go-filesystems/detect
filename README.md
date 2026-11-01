@@ -117,7 +117,7 @@ dependency**.
 
 ## Detected types
 
-`fat32`, `exfat`, `ntfs`, `ext4`, `xfs`, `btrfs`, `zfs`, `apfs`, `hfsplus`,
+`fat12`, `fat16`, `fat32`, `exfat`, `ntfs`, `ext4`, `xfs`, `btrfs`, `zfs`, `apfs`, `hfsplus`,
 `iso9660`, `squashfs`, `ufs` — and `unknown` when nothing matches.
 
 ## Magic-signature table
@@ -141,6 +141,24 @@ positive.
 | `exfat` | `3` | `EXFAT   ` | 8 bytes | OEM identifier |
 | `ntfs` | `3` + `510` | `NTFS    ` + `0xAA55` | 8 bytes + u16 LE | both required |
 | `fat32` | `0x52` + `510` | `FAT32   ` + `0xAA55` | 8 bytes + u16 LE | label at `0x52` distinguishes FAT32 from FAT12/16 (whose label sits at `0x36`) |
+| `fat12` / `fat16` | BIOS parameter block, first 64 bytes + `510` | jump opcode `0xEB`/`0xE9`, `0xAA55`, then **cluster count** | decoded BPB | no label is consulted — see below. Probed first |
+
+### FAT12 and FAT16
+
+These have no magic, and the `FAT12   `/`FAT16   ` label is informational only
+(Microsoft, *FAT: General Overview of On-Disk Format*, "FAT Type
+Determination"; mkfs tools leave it blank or wrong). `detect` decodes the BPB
+and computes the data-cluster count as that specification (and Linux
+`fs/fat/inode.c`) does: `(TotSec - FirstDataSector) / SecPerClus`, where
+`FirstDataSector = RsvdSecCnt + NumFATs*FATSz16 + RootDirSectors`. Below 4085
+clusters is `fat12`, below 65525 is `fat16`. A boot sector is refused (and the
+image stays `unknown`) when the jump opcode or media byte is wrong, the sector
+size is not 512/1024/2048/4096, the cluster size is not a power of two, a count
+is zero, the root entry count does not fill whole sectors, the fixed regions
+do not fit the declared volume or the image, or the count exceeds what FAT16
+can hold (that volume would be FAT32, whose layout has `BPB_FATSz16 == 0`).
+All arithmetic is 64-bit. Tested on images formatted by `newfs_msdos -F 12`
+and `-F 16` and populated with mtools.
 
 ### ZFS detection caveat
 
@@ -159,7 +177,8 @@ detected.
   per-read ceiling, so a truncated or hostile image never triggers a large
   allocation, and probing past the end of a small image is not fatal.
 - **Untrusted input.** An image never sizes an allocation here: every probe is
-  a fixed window of at most 8 bytes at a fixed offset (a test pins the whole
+  a fixed window of at most 8 bytes at a fixed offset (64 for the FAT12/16
+  boot sector; a test pins the whole
   detection to under 256 reads and 2 KiB, for any declared size), and the
   per-read ceiling above is the backstop. `FuzzDetect` feeds arbitrary bytes
   through `Detect` and `Open`. The `fat32reg` adapter stages the image in a

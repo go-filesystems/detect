@@ -36,8 +36,10 @@ type Type string
 // alongside ErrUnknown when no signature matches.
 const (
 	Unknown  Type = "unknown"
+	FAT12    Type = "fat12"
+	FAT16    Type = "fat16"
 	FAT32    Type = "fat32"
-	ExFAT    Type = "exfat"
+	ExFAT   Type = "exfat"
 	NTFS     Type = "ntfs"
 	Ext4     Type = "ext4"
 	XFS      Type = "xfs"
@@ -99,7 +101,9 @@ func readAt(r io.ReaderAt, size, off, n int64) (buf []byte, ok bool) {
 // produce a false positive: container/whole-disk magics (btrfs, squashfs,
 // xfs, ext, apfs, ufs, zfs) are checked before the FAT-family boot-sector
 // heuristics, and FAT32 is only reported when both its boot signature and
-// its "FAT32   " filesystem-type label are present.
+// its "FAT32   " filesystem-type label are present. FAT12 and FAT16 have no
+// such label to trust; they are recognised from the BIOS parameter block by
+// the count of data clusters (see fatbpb.go) and probed first.
 func Detect(r io.ReaderAt, size int64) (Type, error) {
 	if r == nil {
 		return Unknown, ErrUnknown
@@ -128,6 +132,13 @@ var (
 // was verified against the corresponding go-filesystems driver's own reader
 // (offset, value and endianness) — see README for the signature table.
 var probes = []probe{
+	// fat12 / fat16: first, because the test is the whole BIOS parameter block
+	// (see fatbpb.go) and a volume's FAT, which is data, can hold any two
+	// bytes at another type's magic offset (0xEF53 at 0x438 is an ordinary
+	// pair of FAT12 entries). Nothing else has a self-consistent FAT12/16 BPB
+	// in its first sector.
+	{FAT12, func(r io.ReaderAt, size int64) bool { return fatBPBType(r, size) == FAT12 }},
+	{FAT16, func(r io.ReaderAt, size int64) bool { return fatBPBType(r, size) == FAT16 }},
 	// btrfs: u64 LE 0x4D5F53665248425F ("_BHRfS_M") at 0x10040 (65600).
 	{Btrfs, func(r io.ReaderAt, size int64) bool {
 		b, ok := readAt(r, size, 0x10040, 8)
