@@ -3,9 +3,9 @@ package detect
 import (
 	"bytes"
 	"compress/gzip"
+	"embed"
 	"encoding/binary"
 	"io"
-	"os"
 	"testing"
 )
 
@@ -36,9 +36,15 @@ func detectBytes(t *testing.T, b []byte, size int64) Type {
 	return typ
 }
 
+// The fixtures are embedded so the test binary is self-contained: the emulated
+// CI lanes run it from a directory that has no testdata/.
+//
+//go:embed testdata/fat12.img.gz testdata/fat16.img.gz
+var fixtureFS embed.FS
+
 func gunzipFixture(t *testing.T, name string) []byte {
 	t.Helper()
-	f, err := os.Open("testdata/" + name)
+	f, err := fixtureFS.Open("testdata/" + name)
 	if err != nil {
 		t.Fatal(err)
 	}
