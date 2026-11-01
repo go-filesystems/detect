@@ -242,8 +242,13 @@ func TestSmallFATThroughDetect(t *testing.T) {
 		if data, err := fs.ReadFile("/A long file name.txt"); err != nil || len(data) != 3000 {
 			t.Fatalf("%s: ReadFile = %d bytes, %v", name, len(data), err)
 		}
-		if err := fs.WriteFile("/x", []byte("x"), 0o644); err == nil {
-			t.Fatalf("%s: a write to a FAT12/16 volume succeeded", name)
+		// fat32 v0.7.0 writes FAT12/16 (the FAT12 fixture's root is full, so
+		// the file goes in a subdirectory).
+		if err := fs.WriteFile("/MANY/x", []byte("x"), 0o644); err != nil {
+			t.Fatalf("%s: a write to a FAT12/16 volume: %v", name, err)
+		}
+		if data, err := fs.ReadFile("/MANY/x"); err != nil || string(data) != "x" {
+			t.Fatalf("%s: read back %q, %v", name, data, err)
 		}
 		if err := fs.Close(); err != nil {
 			t.Fatal(err)
