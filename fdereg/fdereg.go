@@ -15,8 +15,14 @@
 //     github.com/go-fde/bitlocker, read-only, detected from its volume
 //     header. The secret is a password, a recovery password, or a .BEK
 //     startup key file's contents.
+//   - detect.VeraCrypt: VeraCrypt and TrueCrypt through
+//     github.com/go-fde/veracrypt, read-only, without a probe: its header
+//     is ciphertext, so only detect.OpenContainer(detect.VeraCrypt, …)
+//     reaches it. The secret is the password; every KDF and cipher the
+//     backend supports is tried, as VeraCrypt does. Keyfiles, a PIM or a
+//     hidden volume need github.com/go-fde/veracrypt directly.
 //
-// Both unlock with their package's default limits on key-derivation work,
+// All unlock with their package's default limits on key-derivation work,
 // so an untrusted image cannot make an unlock arbitrarily expensive.
 package fdereg
 
@@ -26,12 +32,14 @@ import (
 
 	"github.com/go-fde/bitlocker"
 	"github.com/go-fde/luks"
+	"github.com/go-fde/veracrypt"
 	"github.com/go-filesystems/detect"
 )
 
 func init() {
 	detect.RegisterContainer(detect.LUKS, isLUKS, unlockLUKS)
 	detect.RegisterContainer(detect.BitLocker, isBitLocker, unlockBitLocker)
+	detect.RegisterContainer(detect.VeraCrypt, nil, unlockVeraCrypt)
 }
 
 const luksMagic = "LUKS\xba\xbe"
@@ -72,6 +80,16 @@ func unlockLUKS(r io.ReaderAt, size int64, secret []byte) (io.ReaderAt, int64, e
 
 func unlockBitLocker(r io.ReaderAt, size int64, secret []byte) (io.ReaderAt, int64, error) {
 	d, err := bitlocker.OpenFrom(readOnly{r}, size, secret, bitlocker.DefaultLimits)
+	if err != nil {
+		return nil, 0, err
+	}
+	return d, d.Size(), nil
+}
+
+// unlockVeraCrypt: VeraCrypt offsets are relative to the data area, so
+// offset 0 is the filesystem's first byte, as detect wants.
+func unlockVeraCrypt(r io.ReaderAt, size int64, secret []byte) (io.ReaderAt, int64, error) {
+	d, err := veracrypt.OpenFrom(readOnly{r}, size, veracrypt.Options{Password: secret})
 	if err != nil {
 		return nil, 0, err
 	}

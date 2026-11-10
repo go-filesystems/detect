@@ -191,9 +191,11 @@ jobs:
           exit $rc
 
   # ----------------------------------------------------------------------
-  # Container adapter module — detect/fdereg. It imports go-fde/luks and
-  # go-fde/bitlocker at published versions (no sibling replace). Its tests
-  # unlock a LUKS container go-fde/luks formats and a BitLocker fixture.
+  # Container adapter module — detect/fdereg. It imports go-fde/luks,
+  # go-fde/bitlocker and go-fde/veracrypt at published versions (no sibling
+  # replace). Its tests unlock a LUKS container go-fde/luks formats, a
+  # BitLocker fixture and a VeraCrypt fixture; the VeraCrypt wrong-password
+  # trial runs every KDF (about 110 s under -race locally).
   # The backends run their own emulated lanes on six architectures.
   # ----------------------------------------------------------------------
   fdereg-native:
