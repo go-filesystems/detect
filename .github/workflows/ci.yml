@@ -191,6 +191,54 @@ jobs:
           exit $rc
 
   # ----------------------------------------------------------------------
+  # Container adapter module — detect/fdereg. It imports go-fde/luks and
+  # go-fde/bitlocker at published versions (no sibling replace). Its tests
+  # unlock a LUKS container go-fde/luks formats and a BitLocker fixture.
+  # The backends run their own emulated lanes on six architectures.
+  # ----------------------------------------------------------------------
+  fdereg-native:
+    name: fdereg native ${{ matrix.arch }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: amd64
+            runs-on: ubuntu-latest
+          - arch: arm64
+            runs-on: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runs-on }}
+    steps:
+      - name: Checkout detect
+        uses: actions/checkout@v7
+        with:
+          path: detect
+
+      - name: Set up Go
+        uses: actions/setup-go@v7
+        with:
+          go-version: '1.27.3'
+          check-latest: true
+          cache: true
+          cache-dependency-path: detect/fdereg/go.mod
+
+      - name: Vet
+        working-directory: detect/fdereg
+        run: go vet ./...
+
+      - name: Test (race + coverage)
+        working-directory: detect/fdereg
+        run: go test -race -coverprofile=cover.out ./...
+
+      - name: Enforce coverage gate
+        working-directory: detect/fdereg
+        run: |
+          set -euo pipefail
+          pct=$(go tool cover -func=cover.out | awk '/^total:/ {sub(/%/,"",$3); print $3}')
+          echo "total coverage: ${pct}%"
+          awk -v p="$pct" 'BEGIN { exit (p+0 >= 100.0) ? 0 : 1 }' \
+            || { echo "coverage ${pct}% below gate 100.0%"; exit 1; }
+
+  # ----------------------------------------------------------------------
   # Adapter module — detect/fat32reg. It imports the fat32 driver, so it
   # carries its own sibling replaces for interface, detect and fat32. All
   # three are checked out flat next to each other.
