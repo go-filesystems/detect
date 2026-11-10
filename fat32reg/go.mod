@@ -4,8 +4,8 @@ go 1.27.1
 
 require (
 	github.com/go-filesystems/detect v0.5.1
-	github.com/go-filesystems/fat32 v0.11.0
-	github.com/go-filesystems/interface v0.5.0
+	github.com/go-filesystems/fat32 v0.12.0
+	github.com/go-filesystems/interface v0.6.0
 )
 
 require (
