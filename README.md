@@ -109,6 +109,7 @@ consumer can wire a driver in with a single blank import:
 | Adapter | Driver | Type |
 |---|---|---|
 | `detect/fat32reg` | [`go-filesystems/fat32`](https://github.com/go-filesystems/fat32) | `fat12`, `fat16`, `fat32` |
+| `detect/fdereg` | [`go-fde/luks`](https://github.com/go-fde/luks), [`go-fde/bitlocker`](https://github.com/go-fde/bitlocker) | containers `luks`, `bitlocker` (see below) |
 
 Each adapter is its own module: it carries the `replace
 github.com/go-filesystems/interface => ../../interface` sibling directive that
