@@ -12,6 +12,7 @@ import (
 
 	"github.com/go-fde/bitlocker"
 	"github.com/go-fde/luks"
+	"github.com/go-fde/veracrypt"
 	"github.com/go-filesystems/detect"
 	filesystem "github.com/go-filesystems/interface"
 )
@@ -127,6 +128,40 @@ func TestBitLocker(t *testing.T) {
 
 	plain, psize, err := unlockBitLocker(r, size, []byte("fde"))
 	if err != nil || psize != size {
+		t.Fatalf("unlock: %d %v", psize, err)
+	}
+	b := make([]byte, 1024)
+	if _, err := plain.ReadAt(b, 0); err != nil {
+		t.Fatal(err)
+	}
+	for i, v := range b {
+		if want := byte(i*31 + i/512); v != want {
+			t.Fatalf("plaintext byte %d is %#x, want %#x", i, v, want)
+		}
+	}
+}
+
+// TestVeraCrypt uses go-fde/veracrypt's fixture (password "fde", a 1 KiB
+// volume holding a byte pattern). Without a probe, OpenSecret and Open see
+// no container; OpenContainer unlocks it by name.
+func TestVeraCrypt(t *testing.T) {
+	img := gunzip(t, filepath.Join("testdata", "veracrypt_aes_sha512_fde.img.gz"))
+	r := bytes.NewReader(img)
+	size := int64(len(img))
+
+	if _, ok := detect.DetectContainer(r, size); ok {
+		t.Fatal("a VeraCrypt volume was detected: its header is ciphertext")
+	}
+	if _, _, err := detect.OpenContainer(detect.VeraCrypt, r, size, []byte("fde")); !errors.Is(err, detect.ErrUnknown) {
+		t.Fatalf("OpenContainer: %v, want ErrUnknown after a successful unlock", err)
+	}
+	// One wrong password: it costs a trial over every KDF.
+	if _, _, err := detect.OpenContainer(detect.VeraCrypt, r, size, []byte("nope")); !errors.Is(err, veracrypt.ErrWrongSecret) {
+		t.Fatalf("wrong password: %v", err)
+	}
+
+	plain, psize, err := unlockVeraCrypt(r, size, []byte("fde"))
+	if err != nil || psize != 1024 {
 		t.Fatalf("unlock: %d %v", psize, err)
 	}
 	b := make([]byte, 1024)

@@ -109,7 +109,7 @@ consumer can wire a driver in with a single blank import:
 | Adapter | Driver | Type |
 |---|---|---|
 | `detect/fat32reg` | [`go-filesystems/fat32`](https://github.com/go-filesystems/fat32) | `fat12`, `fat16`, `fat32` |
-| `detect/fdereg` | [`go-fde/luks`](https://github.com/go-fde/luks), [`go-fde/bitlocker`](https://github.com/go-fde/bitlocker) | containers `luks`, `bitlocker` (see below) |
+| `detect/fdereg` | [`go-fde/luks`](https://github.com/go-fde/luks), [`go-fde/bitlocker`](https://github.com/go-fde/bitlocker), [`go-fde/veracrypt`](https://github.com/go-fde/veracrypt) | containers `luks`, `bitlocker`, `veracrypt` (see below) |
 
 Each adapter is its own module: it carries the `replace
 github.com/go-filesystems/interface => ../../interface` sibling directive that
@@ -125,16 +125,19 @@ links no cryptography. An adapter registers each container with
 `RegisterContainer`, giving a probe and an unlocker.
 
 ```go
-import _ "github.com/go-filesystems/detect/fdereg" // LUKS 1/2, BitLocker (read-only)
+import _ "github.com/go-filesystems/detect/fdereg" // LUKS 1/2; BitLocker, VeraCrypt (read-only)
 
 fs, t, err := detect.OpenSecret(r, size, []byte("passphrase"))
 fs, t, err := detect.OpenFileSecret("disk.img", secret)
 fs, t, err := detect.OpenContainer(detect.LUKS, r, size, secret) // name the container
+fs, t, err := detect.OpenContainer(detect.VeraCrypt, r, size, []byte("password"))
 ```
 
-`detect.VeraCrypt` is reserved, but nothing registers it yet. go-fde has
-no VeraCrypt backend (go-fde/fde#28), so until it does, `OpenContainer`
-returns `ErrNoContainer` for VeraCrypt.
+VeraCrypt (and TrueCrypt) can only be opened by name. The secret is the
+password. The backend tries every KDF and cipher it supports, so a wrong
+password takes several seconds to refuse. Keyfiles, a PIM or a hidden
+volume need [`go-fde/veracrypt`](https://github.com/go-fde/veracrypt)
+directly.
 
 - **Unlocking.** `OpenSecret` probes the registered containers first. On a
   match, it unlocks the container and probes the plaintext for a

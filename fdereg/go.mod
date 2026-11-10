@@ -5,6 +5,7 @@ go 1.27.1
 require (
 	github.com/go-fde/bitlocker v0.1.2
 	github.com/go-fde/luks v0.3.0
+	github.com/go-fde/veracrypt v0.1.0
 	github.com/go-filesystems/detect v0.6.0
 	github.com/go-filesystems/interface v0.6.0
 )
