@@ -39,7 +39,7 @@ const (
 	FAT12    Type = "fat12"
 	FAT16    Type = "fat16"
 	FAT32    Type = "fat32"
-	ExFAT   Type = "exfat"
+	ExFAT    Type = "exfat"
 	NTFS     Type = "ntfs"
 	Ext4     Type = "ext4"
 	XFS      Type = "xfs"

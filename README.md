@@ -115,6 +115,45 @@ github.com/go-filesystems/interface => ../../interface` sibling directive that
 the driver needs, while keeping the **core package free of any driver
 dependency**.
 
+## Encrypted containers
+
+A filesystem may sit inside a full-disk-encryption container: LUKS,
+BitLocker, VeraCrypt. Containers are wired in the same way as drivers. The
+core knows none of them, so a program that never opens encrypted images
+links no cryptography. An adapter registers each container with
+`RegisterContainer`, giving a probe and an unlocker.
+
+```go
+import _ "github.com/go-filesystems/detect/fdereg" // LUKS 1/2, BitLocker (read-only)
+
+fs, t, err := detect.OpenSecret(r, size, []byte("passphrase"))
+fs, t, err := detect.OpenFileSecret("disk.img", secret)
+fs, t, err := detect.OpenContainer(detect.LUKS, r, size, secret) // name the container
+```
+
+`detect.VeraCrypt` is reserved, but nothing registers it yet. go-fde has
+no VeraCrypt backend (go-fde/fde#28), so until it does, `OpenContainer`
+returns `ErrNoContainer` for VeraCrypt.
+
+- **Unlocking.** `OpenSecret` probes the registered containers first. On a
+  match, it unlocks the container and probes the plaintext for a
+  filesystem. When nothing matches, it opens the image as `Open` does.
+- **The secret** is a passphrase, a recovery key or a key file's contents,
+  as each container defines it. The core passes it through to the
+  unlocker unchanged.
+- **Without a secret,** `Open` and `OpenFile` return `ErrEncrypted`
+  wrapped with the container's name, and do not probe the ciphertext.
+  Probing it would at best find nothing. At worst it would misread a
+  header: a BitLocker To Go volume starts like FAT32.
+- **Offsets.** An unlocker hands drivers a device whose offset 0 is the
+  filesystem's first byte, whatever the container's own conventions. LUKS
+  counts from its payload; BitLocker maps the whole volume.
+- **No probe.** A container registered without a probe is never detected.
+  VeraCrypt is the case: its header is ciphertext. `OpenContainer` opens it
+  by name.
+- **FileVault 2** is not a container layer. APFS encrypts inside the
+  filesystem, and go-filesystems/apfs opens it with its own `OpenFDE`.
+
 ## Detected types
 
 `fat12`, `fat16`, `fat32`, `exfat`, `ntfs`, `ext4`, `xfs`, `btrfs`, `zfs`, `apfs`, `hfsplus`,

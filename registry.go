@@ -54,11 +54,22 @@ func opener(t Type) (Opener, bool) {
 // registered for that type. The detected Type is always returned, even on
 // error, so callers can report it.
 //
+//   - If r is a registered encrypted container (RegisterContainer), Open
+//     returns (nil, Unknown, ErrEncrypted) wrapped with the container's
+//     name: open it with OpenSecret.
 //   - If no signature matches, Open returns (nil, Unknown, ErrUnknown).
 //   - If a type is detected but no Opener is registered for it, Open returns
 //     (nil, <type>, ErrUnsupported) wrapped with the type name.
 //   - Otherwise the Opener's result is returned with the detected Type.
 func Open(r io.ReaderAt, size int64) (filesystem.Filesystem, Type, error) {
+	if c, ok := DetectContainer(r, size); ok {
+		return nil, Unknown, fmt.Errorf("%w: %s", ErrEncrypted, c)
+	}
+	return openPlain(r, size)
+}
+
+// openPlain detects the filesystem of r and dispatches to its Opener.
+func openPlain(r io.ReaderAt, size int64) (filesystem.Filesystem, Type, error) {
 	t, err := Detect(r, size)
 	if err != nil {
 		return nil, t, err
@@ -83,6 +94,18 @@ var osOpen = func(path string) (*os.File, error) { return os.Open(path) }
 // Close must be called by the caller) — drivers read lazily through the
 // io.ReaderAt, so the descriptor must outlive the returned value.
 func OpenFile(path string) (filesystem.Filesystem, Type, error) {
+	return openFile(path, Open)
+}
+
+// OpenFileSecret is OpenFile for an image that may be an encrypted
+// container: it opens it with OpenSecret.
+func OpenFileSecret(path string, secret []byte) (filesystem.Filesystem, Type, error) {
+	return openFile(path, func(r io.ReaderAt, size int64) (filesystem.Filesystem, Type, error) {
+		return OpenSecret(r, size, secret)
+	})
+}
+
+func openFile(path string, open func(io.ReaderAt, int64) (filesystem.Filesystem, Type, error)) (filesystem.Filesystem, Type, error) {
 	f, err := osOpen(path)
 	if err != nil {
 		return nil, Unknown, fmt.Errorf("detect: open %s: %w", path, err)
@@ -92,7 +115,7 @@ func OpenFile(path string) (filesystem.Filesystem, Type, error) {
 		f.Close()
 		return nil, Unknown, fmt.Errorf("detect: stat %s: %w", path, err)
 	}
-	fs, t, err := Open(f, fi.Size())
+	fs, t, err := open(f, fi.Size())
 	if err != nil {
 		f.Close()
 		return nil, t, err
