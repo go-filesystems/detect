@@ -1,5 +1,7 @@
 github.com/go-compressions/xz v0.3.1 h1:z4U2wNrV71pgUvxkSlBuoZc7JCJ7d+Tb3tSjyMeGhKc=
 github.com/go-compressions/xz v0.3.1/go.mod h1:ZbYM2CbKR8SZzq6rqhqlWFnBaXrNhWwQyTSslnYQ0FU=
+github.com/go-encryptions/camellia v0.1.0 h1:r015TiEcYgOhA9dkR2JnWDtj9Gff0lPHaRJsT7GGWF4=
+github.com/go-encryptions/camellia v0.1.0/go.mod h1:QCBj6j5PJfCa0nHF+F1a89V9GOIUGLxd7T4PAFRWdmc=
 github.com/go-encryptions/cbc v0.1.0 h1:OhY536n6ZCr/nFt05xS4dr/1iuL/6rwUyjONu3WzUE4=
 github.com/go-encryptions/cbc v0.1.0/go.mod h1:BhSOWBJ5QXH8trCypYXvpqVYqwchKfsQol+s2ZnNZYo=
 github.com/go-encryptions/ccm v0.1.0 h1:kVq0WlU0U+CZIy/pa64MXgBWuJrv/0jot0H8HJAJx2o=
@@ -12,8 +14,8 @@ github.com/go-fde/bitlocker v0.1.2 h1:507s/4/6gOdlBHpZnKSKyf8Uw5JVwT7TyXpxiY40fA
 github.com/go-fde/bitlocker v0.1.2/go.mod h1:sd/odr8i99VC/8yLk3tceRuNk6s9xvC2no0GS86USQU=
 github.com/go-fde/luks v0.3.0 h1:GBHMlIqEjML+RJqa9VRPmsuKNFW1dl552TcFdaOqivk=
 github.com/go-fde/luks v0.3.0/go.mod h1:XcVWTOSSrwWSbBtdwmTIykQ57t2ytEAOzOfxreiy3LM=
-github.com/go-fde/veracrypt v0.2.0 h1:YyLIGkIEs8yAiI020SdG8RoyF94hABSLdgB1GAOknKI=
-github.com/go-fde/veracrypt v0.2.0/go.mod h1:5dO24XoAUmfmglyu5d8fCQ9RJuAuMbKoP4GMQzTaHOo=
+github.com/go-fde/veracrypt v0.3.0 h1:pIxWSQmjySBMKNcLXZUCtTF9mpG6xUftvVtamdRV2vs=
+github.com/go-fde/veracrypt v0.3.0/go.mod h1:cWumCjNF6w7u67au44qNDHJ5+VcuzHVAPYv09ojniYo=
 github.com/go-filesystems/detect v0.6.0 h1:ChWi8ZT4Tiaj53cUq07rO4+EYHGp/LxJCu2/yeUVRnY=
 github.com/go-filesystems/detect v0.6.0/go.mod h1:O4tcwj5LxtD9gvm+IznZCHwzFMdAXDML+8v2JnMv1DY=
 github.com/go-filesystems/interface v0.6.0 h1:+7nA5FHgs/B03rZ9p81bkm0+6ew9fEntTFK8L5Uu6pk=
