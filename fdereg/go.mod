@@ -1,6 +1,6 @@
 module github.com/go-filesystems/detect/fdereg
 
-go 1.27.1
+go 1.27.4
 
 require (
 	github.com/go-fde/bitlocker v0.1.3
