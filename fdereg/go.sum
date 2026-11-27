@@ -24,8 +24,8 @@ github.com/go-encryptions/xts v0.3.2 h1:0HKFiBsCaT2+4sPBZXy/oT6Wo8a96EpUEmrDzdGO
 github.com/go-encryptions/xts v0.3.2/go.mod h1:DOulimnYhyZsjPPeMPDkD/i6cUOLq7mpfvGKG+cdVKQ=
 github.com/go-fde/bitlocker v0.2.0 h1:goPN86I4/PIEU2NTsd4ZzMFQHn7CtHZGPAG7HNlHWJA=
 github.com/go-fde/bitlocker v0.2.0/go.mod h1:QcsahNyQrFG9TNLNfVNzf854MGbNQa4KoJ7I9eO/2EY=
-github.com/go-fde/luks v0.5.1 h1:misLelidZwQ30rdUXZvLhnvVO4V2atq9hPMA6FDbNWc=
-github.com/go-fde/luks v0.5.1/go.mod h1:1rNzduf5O7HwgtZDzzzaOPemVoGfIaZ6RkUWkGLidb4=
+github.com/go-fde/luks v0.5.2 h1:M8kUNlOXGkjRycFTWrUEK/1xt/xkz+ER5hGsDL8M4+o=
+github.com/go-fde/luks v0.5.2/go.mod h1:1rNzduf5O7HwgtZDzzzaOPemVoGfIaZ6RkUWkGLidb4=
 github.com/go-fde/veracrypt v0.8.1 h1:AOZaKXzDj35RffV7HJwkjC3p6Bzh2srWTuzM8MVxLWI=
 github.com/go-fde/veracrypt v0.8.1/go.mod h1:PPrU9IJLnxMCIu/4k9bo43v8xHarH7MO41iPDxU6OGM=
 github.com/go-filesystems/detect v0.6.0 h1:ChWi8ZT4Tiaj53cUq07rO4+EYHGp/LxJCu2/yeUVRnY=
